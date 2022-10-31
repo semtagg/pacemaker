@@ -1226,6 +1226,11 @@ services__execute_file(svc_action_t *op)
         goto done;
     }
 
+    log_op_output(op);
+    crm_log_output(LOG_INFO, &"action", op->action);
+    crm_log_output(LOG_INFO, &"agent", op->agent);
+    crm_log_output(LOG_INFO, &"povider",op->provider);
+
     op->pid = fork();
     switch (op->pid) {
         case -1:
