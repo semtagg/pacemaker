@@ -1227,6 +1227,8 @@ services__execute_file(svc_action_t *op)
         goto done;
     }
 
+    {
+    
     void *handle;
     int (*exec)(svc_action_t *op);
     char *lib_error;
@@ -1239,6 +1241,8 @@ services__execute_file(svc_action_t *op)
         exec = dlsym(handle, op->action);
 
         if ((lib_error = dlerror()) != NULL){
+            free(lib_error);
+            
             crm_info("Shared library doesnot contain method");
         } else {
             exec_status = exec(op);
@@ -1248,7 +1252,6 @@ services__execute_file(svc_action_t *op)
                 close_pipe(stdout_fd);
                 close_pipe(stderr_fd);
                 sigchld_cleanup(&data);
-                free(lib_error);
                 
                 return pcmk_rc_ok;
             }
@@ -1257,8 +1260,7 @@ services__execute_file(svc_action_t *op)
         }
     }
 
-    free(lib_error);
-
+    }
     op->pid = fork();
     switch (op->pid) {
         case -1:
