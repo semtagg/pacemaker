@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include <grp.h>
 #include <string.h>
 #include <sys/time.h>
@@ -1226,10 +1227,37 @@ services__execute_file(svc_action_t *op)
         goto done;
     }
 
-    log_op_output(op);
-    crm_log_output(LOG_INFO, "action", op->action);
-    crm_log_output(LOG_INFO, "agent", op->agent);
-    crm_log_output(LOG_INFO, "povider",op->provider);
+    void *handle;
+    int (*exec)(svc_action_t *op);
+    char *lib_error;
+    int exec_status;
+    handle = dlopen (op->agent, RTLD_LAZY);
+    
+    if (!handle) {
+        crm_info("Cannot execute shared library");
+    } else {
+        exec = dlsym(handle, op->action);
+
+        if ((lib_error = dlerror()) != NULL){
+            crm_info("Shared library doesnot contain method");
+        } else {
+            exec_status = exec(op);
+
+            if (exec_status) {        
+                close_pipe(stdin_fd);
+                close_pipe(stdout_fd);
+                close_pipe(stderr_fd);
+                sigchld_cleanup(&data);
+                free(lib_error);
+                
+                return pcmk_rc_ok;
+            }
+
+            crm_info("Cannot execute resource with shared library");
+        }
+    }
+
+    free(lib_error);
 
     op->pid = fork();
     switch (op->pid) {
