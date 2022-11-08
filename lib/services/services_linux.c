@@ -1259,8 +1259,10 @@ services__execute_file(svc_action_t *op)
             crm_info("Cannot execute resource with shared library");
         }
     }
+    // dlclose(handle);
 
     }
+
     op->pid = fork();
     switch (op->pid) {
         case -1:
