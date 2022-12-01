@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <fcntl.h>
 
 #define	OCF_SUCCESS		0
@@ -20,16 +21,23 @@ static const char     STATUS_CMD[]      = "status";
 static const char     MONITOR_CMD[]     = "monitor";
 static const char     META_DATA_CMD[]   = "meta-data";
 
+static const char     DISABLE[]          = "one";
+static const char     ENABLE[]         = "two";
+
 const char my_interp[] __attribute__((section(".interp"))) = "/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2";
 
 int
 start(void) {
     static const char mes[] = "Hello from 'Start action' test agent.\n";
     int fd = open("/var/log/test.log", O_WRONLY | O_APPEND);
+    int fd_check = open("/var/log/check.log", O_WRONLY);
 
     write(fd, mes, sizeof(mes));
-    close(fd);
+    lseek(fd_check, 0, SEEK_SET);
+    write(fd_check, DISABLE, sizeof(DISABLE));
 
+    close(fd);
+    close(fd_check);
     return OCF_SUCCESS;
 }
 
@@ -37,10 +45,14 @@ int
 stop(void) {
     static const char mes[] = "Hello from 'Stop action' test agent.\n";
     int fd = open("/var/log/test.log", O_WRONLY | O_APPEND);
+    int fd_check = open("/var/log/check.log", O_WRONLY);
 
     write(fd, mes, sizeof(mes));
-    close(fd);
+    lseek(fd_check, 0, SEEK_SET);
+    write(fd_check, ENABLE, sizeof(ENABLE));
 
+    close(fd);
+    close(fd_check);
     return OCF_SUCCESS;
 }
 
@@ -60,11 +72,24 @@ monitor(void) {
     static const char mes[] = "Hello from 'Monitor action' test agent.\n";
     //int fd = open("/var/log/test.log", O_WRONLY | O_APPEND | O_CREAT, 0666);
     int fd = open("/var/log/test.log", O_WRONLY | O_APPEND);
+    int fd_check = open("/var/log/check.log", O_RDONLY);
+    char buf_check[4];
 
     write(fd, mes, sizeof(mes));
-    close(fd);
+    if (read(fd_check, buf_check, 3) >= 0) {
+        buf_check[3] = '\0';
+    }
 
-    return OCF_SUCCESS;
+    close(fd);
+    close(fd_check);
+
+    if (strcmp(buf_check, ENABLE) == 0) {
+        return OCF_SUCCESS;
+    } else if (strcmp(buf_check, DISABLE) == 0) {
+        return OCF_NOT_RUNNING;
+    }
+
+    return -1;
 }
 
 int

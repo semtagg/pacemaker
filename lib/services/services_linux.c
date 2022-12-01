@@ -1176,7 +1176,7 @@ services__execute_file(svc_action_t *op)
     int (*exec)(int, int, char *);
     char *lib_error;
     int exec_status;
-    char dst[1024] = "/usr/lib/ocf/resource.d/heartbeat/";
+    char dst[200] = "/usr/lib/ocf/resource.d/heartbeat/";
     strcat(dst, op->agent);
     handle = dlopen (dst, RTLD_NOW | RTLD_LOCAL);
 
@@ -1198,8 +1198,8 @@ services__execute_file(svc_action_t *op)
             char num[10];
             int out_fd;
             int err_fd;
-            char out_file_name[1024] = "outfd-";
-            char err_file_name[1024] = "errfd-";
+            char out_file_name[100] = "outfd-";
+            char err_file_name[100] = "errfd-";
             sprintf(num, "%d", getpid());
             strcat(out_file_name, num);
             strcat(err_file_name, num);
@@ -1248,7 +1248,7 @@ services__execute_file(svc_action_t *op)
                 }
             }
             dlclose(handle);
-            return exec_status;
+            return pcmk_rc_ok;
             //dlclose(handle);
         }
 
