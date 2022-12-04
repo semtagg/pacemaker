@@ -1389,7 +1389,6 @@ execute_resource_action(gpointer user_data)
 
     rsc->active = cmd;          /* only one op at a time for a rsc */
     if (cmd->interval_ms) {
-        crm_info("execute_resource_action '%s'", cmd->action);
         rsc->recurring_ops = g_list_append(rsc->recurring_ops, cmd);
     }
 

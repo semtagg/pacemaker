@@ -1456,20 +1456,19 @@ services__execute_file_as_plugin(svc_action_t *op) {
     handle = dlopen (dst, RTLD_NOW | RTLD_LOCAL);
 
     if (!handle) {
-        crm_info("1");
-        crm_info("Cannot execute '%s'", op->action);
-        crm_info("Cannot execute '%s'", op->agent);
+        // можно что-то залогировать
         return pcmk_rc_error;
     } else {
-        crm_info("2");
-        crm_info("Execute action: '%s'", op->action);
-        crm_info("Execute synchro: '%d'", op->synchronous);
+        // можно что-то залогировать
         exec = dlsym(handle, "handler");
 
         if ((lib_error = dlerror()) != NULL){
             free(lib_error);
 
-            crm_info("Shared library doesnot contain method");
+            // можно что-то залогировать
+            // ситуация, когда мы смогли открыть агента
+            // как разделяемую библиотеку, но не нашли
+            // нужного метода (что-то странное)
             return pcmk_rc_error;
         } else {
             char num[10];
