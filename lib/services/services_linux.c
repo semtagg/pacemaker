@@ -1243,6 +1243,17 @@ services__execute_file(svc_action_t *op)
                 op->rc = exec_status;
                 op->status = PCMK_EXEC_DONE;
                 op->pid = 0;
+                if (op->interval_ms != 0) {
+                        // Recurring operations must be either cancelled or rescheduled
+                        if (op->cancel) {
+                                services__set_cancelled(op);
+                                cancel_recurring_action(op);
+                        } else {
+                                op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
+                                                                     recurring_action_timer,
+                                                                     (void *) op);
+                        }
+                }
                 if (op->opaque->callback) {
                     op->opaque->callback(op);
                 }
