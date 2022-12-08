@@ -1009,7 +1009,6 @@ action_launch_child(svc_action_t *op)
 
     // An earlier stat() should have avoided most possible errors
     rc = errno;
-    crm_info("PCMK_NOT_INSTALLED - action_launch_child, action - '%s'", op->action);
     services__handle_exec_error(op, rc);
     crm_err("Unable to execute %s: %s", op->id, strerror(rc));
     exit_child(op, op->rc, "Child process was unable to execute file");
@@ -1357,6 +1356,7 @@ services__execute_file(svc_action_t *op)
                                                  &stderr_callbacks);
     services_add_inflight_op(op);
     return pcmk_rc_ok;
+
 done:
     if (op->synchronous) {
         return (op->rc == PCMK_OCF_OK)? pcmk_rc_ok : pcmk_rc_error;
