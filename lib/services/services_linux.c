@@ -1476,6 +1476,9 @@ services__execute_file_as_plugin(svc_action_t *op) {
             int err_fd;
             char out_file_name[100] = "outfd-";
             char err_file_name[100] = "errfd-";
+
+            add_action_env_vars(op);
+
             sprintf(num, "%d", getpid());
             strcat(out_file_name, num);
             strcat(err_file_name, num);
