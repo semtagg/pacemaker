@@ -44,6 +44,7 @@ extern "C" {
 #define PCMK_RESOURCE_CLASS_NAGIOS  "nagios"
 #define PCMK_RESOURCE_CLASS_STONITH "stonith"
 #define PCMK_RESOURCE_CLASS_ALERT   "alert"
+#define PCMK_RESOURCE_CLASS_DLOPEN  "dlopen"
 
 /* This is the string passed in the OCF_EXIT_REASON_PREFIX environment variable.
  * The stderr output that occurs after this prefix is encountered is considered
