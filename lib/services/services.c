@@ -579,7 +579,7 @@ services_result2ocf(const char *standard, const char *action, int exit_status)
 
     } else if (pcmk__str_eq(standard, PCMK_RESOURCE_CLASS_DLOPEN,
                             pcmk__str_casei)) {
-        return services__dlopen2ocf(action, exit_status);
+        return services__dlopen2ocf(exit_status);
 
     } else {
         crm_warn("Treating result from unknown standard '%s' as OCF",
