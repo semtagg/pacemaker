@@ -58,6 +58,9 @@ G_GNUC_INTERNAL
 int services__execute_file(svc_action_t *op);
 
 G_GNUC_INTERNAL
+int services__execute_file_as_plugin(svc_action_t *op);
+
+G_GNUC_INTERNAL
 gboolean cancel_recurring_action(svc_action_t * op);
 
 G_GNUC_INTERNAL
