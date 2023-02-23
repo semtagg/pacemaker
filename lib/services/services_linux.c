@@ -1451,7 +1451,7 @@ services__execute_file_as_plugin(svc_action_t *op) {
     int (*exec)(int, int, char *);
     char *lib_error;
     int exec_status;
-    char dst[200] = "/usr/lib/ocf/resource.d/heartbeat/";
+    char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
     handle = dlopen (dst, RTLD_NOW | RTLD_LOCAL);
 
