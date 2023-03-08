@@ -7,9 +7,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/stat.h>
-
+#include <dlfcn.h>
 #include <crm/crm.h>
 #include <crm/services.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 #include "services_private.h"
 #include "services_dlopen.h"
 

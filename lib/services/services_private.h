@@ -1,5 +1,4 @@
 /*
-    }
  * Copyright 2010-2011 Red Hat, Inc.
  * Later changes copyright 2012-2021 the Pacemaker project contributors
  *
