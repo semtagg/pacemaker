@@ -1178,8 +1178,12 @@ services__execute_file(svc_action_t *op)
     struct stat st;
     struct sigchld_data_s data;
 
-    if (services__execute_file_as_plugin(op) == pcmk_rc_ok){
-        return pcmk_rc_ok;
+    if (strcasecmp(op->standard, PCMK_RESOURCE_CLASS_DLOPEN) == 0) {
+        if (strcasecmp(op->action, "meta-data") == 0) {
+            return services__execute_file_as_plugin_metadata(op);
+        }
+
+        return services__execute_file_as_plugin(op);
     }
 
     // Catch common failure conditions early
@@ -1447,99 +1451,91 @@ services_os_get_directory_list(const char *root, gboolean files, gboolean execut
 
 int
 services__execute_file_as_plugin(svc_action_t *op) {
-    void *handle;
-    int (*exec)(int, int, char *);
+    void *lib;
     char *lib_error;
-    int exec_status;
+    int (*exec)(GHashTable *);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
-    handle = dlopen (dst, RTLD_NOW | RTLD_LOCAL);
+    g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
+    lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL);
 
-    if (!handle) {
-        // можно что-то залогировать
+    if (!lib) {
         return pcmk_rc_error;
     } else {
-        // можно что-то залогировать
-        exec = dlsym(handle, "handler");
+        exec = dlsym(lib, op->action);
 
         if ((lib_error = dlerror()) != NULL){
             free(lib_error);
 
-            // можно что-то залогировать
-            // ситуация, когда мы смогли открыть агента
-            // как разделяемую библиотеку, но не нашли
-            // нужного метода (что-то странное)
             return pcmk_rc_error;
         } else {
-            char num[10];
-            int out_fd;
-            int err_fd;
-            char out_file_name[100] = "outfd-";
-            char err_file_name[100] = "errfd-";
-
-            add_action_env_vars(op);
-
-            sprintf(num, "%d", getpid());
-            strcat(out_file_name, num);
-            strcat(err_file_name, num);
-
-            out_fd = memfd_create(out_file_name, MFD_ALLOW_SEALING);
-            err_fd = memfd_create(err_file_name, MFD_ALLOW_SEALING);
-
-            exec_status = exec(out_fd, err_fd, op->action);
-            {
-                int size_out = lseek(out_fd, 0, SEEK_END); // SEEK_CUR ?
-                int size_err = lseek(err_fd, 0, SEEK_END);
-                if (size_out > 0) {
-                    char *buf_out = (char *)malloc(sizeof(char) * (size_out + 1));
-                    lseek(out_fd, 0, SEEK_SET);
-                    if (read(out_fd, buf_out, size_out) >= 0) {
-                        buf_out[size_out] = '\0';
-                        op->stdout_data = buf_out;
-                    }
+            op->rc = exec(op->params);
+            op->status = PCMK_EXEC_DONE;
+            op->pid = 0;
+            if (op->interval_ms != 0) {
+                // Recurring operations must be either cancelled or rescheduled
+                if (op->cancel) {
+                    services__set_cancelled(op);
+                    cancel_recurring_action(op);
                 } else {
-                    op->stdout_data = NULL;
-                }
-
-                if (size_err > 0) {
-                    char *buf_err = (char *)malloc(sizeof(char) * (size_err + 1));
-                    lseek(err_fd, 0, SEEK_SET);
-                    if (read(err_fd, buf_err, size_err) >= 0) {
-                        buf_err[size_err] = '\0';
-                        op->stderr_data = buf_err;
-                    }
-                } else {
-                    op->stderr_data = NULL;
-                }
-
-                if (close(out_fd) < 0) {
-                    crm_info("Error '%s'", "a");
-                }
-                if (close(err_fd) < 0) {
-                    crm_info("Error 's'", "b");
-                }
-
-                op->rc = exec_status;
-                op->status = PCMK_EXEC_DONE;
-                op->pid = 0;
-                if (op->interval_ms != 0) {
-                        // Recurring operations must be either cancelled or rescheduled
-                        if (op->cancel) {
-                                services__set_cancelled(op);
-                                cancel_recurring_action(op);
-                        } else {
-                                op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
-                                                                     recurring_action_timer,
-                                                                     (void *) op);
-                        }
-                }
-                if (op->opaque->callback) {
-                    op->opaque->callback(op);
+                    op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
+                                                            recurring_action_timer,
+                                                            (void *) op);
                 }
             }
-            dlclose(handle);
+
+            if (op->opaque->callback) {
+                op->opaque->callback(op);
+            }
+
+            dlclose(lib);
             return pcmk_rc_ok;
-            //dlclose(handle);
         }
     }
 }
+
+int
+services__execute_file_as_plugin_metadata(svc_action_t *op) {
+    void *lib;
+    char *lib_error;
+    int (*exec)(GHashTable *, char **);
+    char dst[200] = "/usr/lib/dlopen/";
+    strcat(dst, op->agent);
+    g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
+    lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL);
+
+    if (!lib) {
+        return pcmk_rc_error;
+    } else {
+        exec = dlsym(lib, "metadata");
+
+        if ((lib_error = dlerror()) != NULL){
+            free(lib_error);
+
+            return pcmk_rc_error;
+        } else {
+            op->rc = exec(op->params, &op->stdout_data);
+            op->status = PCMK_EXEC_DONE;
+            op->pid = 0;
+            if (op->interval_ms != 0) {
+                // Recurring operations must be either cancelled or rescheduled
+                if (op->cancel) {
+                    services__set_cancelled(op);
+                    cancel_recurring_action(op);
+                } else {
+                    op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
+                                                            recurring_action_timer,
+                                                            (void *) op);
+                }
+            }
+
+            if (op->opaque->callback) {
+                op->opaque->callback(op);
+            }
+
+            dlclose(lib);
+            return pcmk_rc_ok;
+        }
+    }
+}
+
