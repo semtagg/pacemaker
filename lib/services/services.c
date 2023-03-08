@@ -825,7 +825,7 @@ execute_action(svc_action_t *op)
 {
     if (pcmk__str_eq(op->standard, PCMK_RESOURCE_CLASS_DLOPEN,
                      pcmk__str_casei)) {
-        return services__execute_upstart(op);
+        return services__execute_dlopen(op);
     }
 
 #if SUPPORT_UPSTART
