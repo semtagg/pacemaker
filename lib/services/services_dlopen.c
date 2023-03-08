@@ -57,10 +57,10 @@ services__dlopen2ocf(int exit_status)
 int
 services__execute_dlopen(svc_action_t *op) {
     if (strcasecmp(op->action, "meta-data") == 0) {
-        return services__execute_file_as_plugin_metadata(op);
+        return services__execute_dlopen_metadata(op);
     }
 
-    return services__execute_file_as_plugin(op);
+    return services__execute_dlopen_action(op);
 }
 
 int
