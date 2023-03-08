@@ -11,4 +11,13 @@ G_GNUC_INTERNAL int services__dlopen_prepare(svc_action_t *op);
 G_GNUC_INTERNAL
 enum ocf_exitcode services__dlopen2ocf(int exit_status);
 
+G_GNUC_INTERNAL
+int services__execute_dlopen(svc_action_t *op);
+
+G_GNUC_INTERNAL
+int services__execute_dlopen_metadata(svc_action_t *op);
+
+G_GNUC_INTERNAL
+int services__execute_dlopen_action(svc_action_t *op);
+
 #endif

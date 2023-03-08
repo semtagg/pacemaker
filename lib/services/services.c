@@ -823,6 +823,11 @@ handle_duplicate_recurring(svc_action_t * op)
 static int
 execute_action(svc_action_t *op)
 {
+    if (pcmk__str_eq(op->standard, PCMK_RESOURCE_CLASS_DLOPEN,
+                     pcmk__str_casei)) {
+        return services__execute_upstart(op);
+    }
+
 #if SUPPORT_UPSTART
     if (pcmk__str_eq(op->standard, PCMK_RESOURCE_CLASS_UPSTART,
                      pcmk__str_casei)) {

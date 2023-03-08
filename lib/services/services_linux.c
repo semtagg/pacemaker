@@ -1178,14 +1178,6 @@ services__execute_file(svc_action_t *op)
     struct stat st;
     struct sigchld_data_s data;
 
-    if (strcasecmp(op->standard, PCMK_RESOURCE_CLASS_DLOPEN) == 0) {
-        if (strcasecmp(op->action, "meta-data") == 0) {
-            return services__execute_file_as_plugin_metadata(op);
-        }
-
-        return services__execute_file_as_plugin(op);
-    }
-
     // Catch common failure conditions early
     if (stat(op->opaque->exec, &st) != 0) {
         rc = errno;
@@ -1448,94 +1440,3 @@ services_os_get_directory_list(const char *root, gboolean files, gboolean execut
 
     return result;
 }
-
-int
-services__execute_file_as_plugin(svc_action_t *op) {
-    void *lib;
-    char *lib_error;
-    int (*exec)(GHashTable *);
-    char dst[200] = "/usr/lib/dlopen/";
-    strcat(dst, op->agent);
-    g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
-    lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL);
-
-    if (!lib) {
-        return pcmk_rc_error;
-    } else {
-        exec = dlsym(lib, op->action);
-
-        if ((lib_error = dlerror()) != NULL){
-            free(lib_error);
-
-            return pcmk_rc_error;
-        } else {
-            op->rc = exec(op->params);
-            op->status = PCMK_EXEC_DONE;
-            op->pid = 0;
-            if (op->interval_ms != 0) {
-                // Recurring operations must be either cancelled or rescheduled
-                if (op->cancel) {
-                    services__set_cancelled(op);
-                    cancel_recurring_action(op);
-                } else {
-                    op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
-                                                            recurring_action_timer,
-                                                            (void *) op);
-                }
-            }
-
-            if (op->opaque->callback) {
-                op->opaque->callback(op);
-            }
-
-            dlclose(lib);
-            return pcmk_rc_ok;
-        }
-    }
-}
-
-int
-services__execute_file_as_plugin_metadata(svc_action_t *op) {
-    void *lib;
-    char *lib_error;
-    int (*exec)(GHashTable *, char **);
-    char dst[200] = "/usr/lib/dlopen/";
-    strcat(dst, op->agent);
-    g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
-    lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL);
-
-    if (!lib) {
-        return pcmk_rc_error;
-    } else {
-        exec = dlsym(lib, "metadata");
-
-        if ((lib_error = dlerror()) != NULL){
-            free(lib_error);
-
-            return pcmk_rc_error;
-        } else {
-            op->rc = exec(op->params, &op->stdout_data);
-            op->status = PCMK_EXEC_DONE;
-            op->pid = 0;
-            if (op->interval_ms != 0) {
-                // Recurring operations must be either cancelled or rescheduled
-                if (op->cancel) {
-                    services__set_cancelled(op);
-                    cancel_recurring_action(op);
-                } else {
-                    op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
-                                                            recurring_action_timer,
-                                                            (void *) op);
-                }
-            }
-
-            if (op->opaque->callback) {
-                op->opaque->callback(op);
-            }
-
-            dlclose(lib);
-            return pcmk_rc_ok;
-        }
-    }
-}
-
