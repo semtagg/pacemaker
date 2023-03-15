@@ -71,7 +71,7 @@ services__execute_dlopen_metadata(svc_action_t *op) {
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
     g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
-    lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL);
+    lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
         return pcmk_rc_error;
