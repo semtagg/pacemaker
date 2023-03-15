@@ -276,12 +276,10 @@ services__create_resource_action(const char *name, const char *standard,
     op->sequence = ++operations;
 
     // Take ownership of params
-    crm_info("Stanard %s", standard);
     if (pcmk_is_set(ra_caps, pcmk_ra_cap_params) || strcasecmp(standard, PCMK_RESOURCE_CLASS_DLOPEN) == 0) {
-	op->params = params;
+        op->params = params;
     } else if (params != NULL) {
-	crm_info("Wtf");
-	g_hash_table_destroy(params);
+        g_hash_table_destroy(params);
         params = NULL;
     }
 
