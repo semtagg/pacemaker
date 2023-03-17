@@ -40,6 +40,9 @@ pcmk_get_ra_caps(const char *standard)
         return pcmk_ra_cap_provider | pcmk_ra_cap_params
                | pcmk_ra_cap_unique | pcmk_ra_cap_promotable;
 
+    } else if (!strcasecmp(standard, PCMK_RESOURCE_CLASS_DLOPEN)) {
+        return pcmk_ra_cap_params;
+
     } else if (!strcasecmp(standard, PCMK_RESOURCE_CLASS_STONITH)) {
         /* @COMPAT Stonith resources can't really be unique clones, but we've
          * allowed it in the past and have it in some scheduler regression tests
