@@ -303,7 +303,6 @@ services__create_resource_action(const char *name, const char *standard,
 
     if (strcasecmp(op->standard, PCMK_RESOURCE_CLASS_OCF) == 0) {
         rc = services__ocf_prepare(op);
-
     } else if (strcasecmp(op->standard, PCMK_RESOURCE_CLASS_LSB) == 0) {
         rc = services__lsb_prepare(op);
     } else if (strcasecmp(op->standard, PCMK_RESOURCE_CLASS_DLOPEN) == 0) {
