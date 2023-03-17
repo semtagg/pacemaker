@@ -1969,7 +1969,6 @@ lrmd_api_get_metadata_params(lrmd_t *lrmd, const char *standard,
     }
 
     if (!services_action_sync(action)) {
-        crm_info("First");
         crm_err("Failed to retrieve meta-data for %s:%s:%s",
                 standard, provider, type);
         services_action_free(action);
@@ -1977,7 +1976,6 @@ lrmd_api_get_metadata_params(lrmd_t *lrmd, const char *standard,
     }
 
     if (!action->stdout_data) {
-        crm_info("Second");
         crm_err("Failed to receive meta-data for %s:%s:%s",
                 standard, provider, type);
         services_action_free(action);
