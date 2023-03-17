@@ -24,7 +24,6 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-
 #include "crm/crm.h"
 #include "crm/common/mainloop.h"
 #include "crm/services.h"
