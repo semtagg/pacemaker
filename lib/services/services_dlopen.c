@@ -68,7 +68,7 @@ services__execute_dlopen_metadata(svc_action_t *op) {
     void *lib;
     char *lib_error;
     char *error;
-    int (*exec)(GHashTable *, char **, char **);
+    int (*exec)(char **);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
     g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
@@ -84,7 +84,7 @@ services__execute_dlopen_metadata(svc_action_t *op) {
 
             return pcmk_rc_error;
         } else {
-            op->rc = exec(op->params, &op->stdout_data, &error);
+            op->rc = exec(&op->stdout_data);
             op->status = PCMK_EXEC_DONE;
             op->pid = 0;
             if (op->interval_ms != 0) {
