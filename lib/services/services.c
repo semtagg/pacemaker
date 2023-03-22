@@ -1076,6 +1076,7 @@ resources_list_standards(void)
     GList *standards = NULL;
 
     standards = g_list_append(standards, strdup(PCMK_RESOURCE_CLASS_OCF));
+    standards = g_list_append(standards, strdup(PCMK_RESOURCE_CLASS_DLOPEN));
     standards = g_list_append(standards, strdup(PCMK_RESOURCE_CLASS_LSB));
     standards = g_list_append(standards, strdup(PCMK_RESOURCE_CLASS_SERVICE));
 
