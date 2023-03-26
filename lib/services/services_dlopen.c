@@ -1,5 +1,5 @@
 #include <crm_internal.h>
-
+#pragma GCC diagnostic ignored "-Waggregate-return"
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif
@@ -16,6 +16,9 @@
 #include "services_dlopen.h"
 
 #define PCMK_DLOPEN_DIR  "/usr/lib/dlopen" // or "/usr/lib/dlopen/"
+
+typedef int go_int;
+typedef struct{const char *p; go_int len;} go_str;
 
 GList *
 services__list_dlopen_agents(void)
@@ -67,7 +70,7 @@ int
 services__execute_dlopen_metadata(svc_action_t *op) {
     void *lib;
     char *lib_error;
-    const char *metadata;
+    go_str (*metadata)();
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
@@ -83,11 +86,11 @@ services__execute_dlopen_metadata(svc_action_t *op) {
 
         return pcmk_rc_error;
     }
-
+    
     op->rc = PCMK_OCF_OK;
     op->status = PCMK_EXEC_DONE;
     op->pid = 0;
-    op->stdout_data = strdup(metadata);
+    op->stdout_data = strdup(metadata().p);
 
     if (op->opaque->callback) {
         op->opaque->callback(op);
@@ -102,10 +105,14 @@ services__execute_dlopen_action(svc_action_t *op) {
     void *lib;
     char *lib_error;
     char *error;
-    int (*exec)(GHashTable *, char **);
+    go_str msg = {op->rsc, sizeof(op->rsc)};
+    go_int (*exec)(go_str);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
     g_hash_table_replace(op->params, strdup("DLOPEN_RESOURCE_INSTANCE"), strdup(op->rsc));
+    
+    crm_info("Resource %s", op->rsc);
+    
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
@@ -120,7 +127,7 @@ services__execute_dlopen_action(svc_action_t *op) {
         return pcmk_rc_error;
     }
 
-    op->rc = exec(op->params, &error);
+    op->rc = exec(msg);
     op->status = PCMK_EXEC_DONE;
     op->pid = 0;
 
