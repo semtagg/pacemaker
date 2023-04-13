@@ -68,8 +68,7 @@ services__execute_dlopen_metadata(svc_action_t *op) {
     void *lib;
     char *lib_error;
     const char *metadata;
-    char dst[200] = "/usr/lib/dlopen/";
-    strcat(dst, op->agent);
+    char *dst = pcmk__full_path(op->agent, DLOPEN_ROOT_DIR);
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
@@ -103,8 +102,7 @@ services__execute_dlopen_action(svc_action_t *op) {
     char *lib_error;
     char *error;
     int (*exec)(GHashTable *, char **);
-    char dst[200] = "/usr/lib/dlopen/";
-    strcat(dst, op->agent);
+    char *dst = pcmk__full_path(op->agent, DLOPEN_ROOT_DIR);
     g_hash_table_replace(op->params, strdup("DLOPEN_RESOURCE_INSTANCE"), strdup(op->rsc));
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
