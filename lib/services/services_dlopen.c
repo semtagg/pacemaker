@@ -15,12 +15,12 @@
 #include "services_private.h"
 #include "services_dlopen.h"
 
-#define PCMK_DLOPEN_DIR  "/usr/lib/dlopen" // or "/usr/lib/dlopen/"
+// #define DLOPEN_ROOT_DIR  "/usr/lib/dlopen" // or "/usr/lib/dlopen/"
 
 GList *
 services__list_dlopen_agents(void)
 {
-    return services_os_get_directory_list(PCMK_DLOPEN_DIR, TRUE, FALSE);
+    return services_os_get_directory_list(DLOPEN_ROOT_DIR, TRUE, FALSE);
 }
 
 bool
@@ -28,7 +28,7 @@ services__dlopen_agent_exists(const char *agent)
 {
     bool rc = FALSE;
     struct stat st;
-    char *path = pcmk__full_path(agent, PCMK_DLOPEN_DIR);
+    char *path = pcmk__full_path(agent, DLOPEN_ROOT_DIR);
 
     rc = (stat(path, &st) == 0);
     free(path);
@@ -38,7 +38,7 @@ services__dlopen_agent_exists(const char *agent)
 int
 services__dlopen_prepare(svc_action_t *op)
 {
-    op->opaque->exec = pcmk__full_path(op->agent, PCMK_DLOPEN_DIR);
+    op->opaque->exec = pcmk__full_path(op->agent, DLOPEN_ROOT_DIR);
     op->opaque->args[0] = strdup(op->opaque->exec);
     op->opaque->args[1] = strdup(op->action);
     if ((op->opaque->args[0] == NULL) || (op->opaque->args[1] == NULL)) {
@@ -67,34 +67,48 @@ int
 services__execute_dlopen_metadata(svc_action_t *op) {
     void *lib;
     char *lib_error;
-    const char *metadata;
+    char *error;
+    int (*exec)(char **);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
+    g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
         return pcmk_rc_error;
+    } else {
+        exec = dlsym(lib, "metadata");
+
+        if ((lib_error = dlerror()) != NULL){
+            free(lib_error);
+
+            return pcmk_rc_error;
+        } else {
+            op->rc = exec(&op->stdout_data);
+            op->status = PCMK_EXEC_DONE;
+            op->pid = 0;
+            if (op->interval_ms != 0) {
+                // Recurring operations must be either cancelled or rescheduled
+                if (op->cancel) {
+                    services__set_cancelled(op);
+                    cancel_recurring_action(op);
+                } else {
+                    op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
+                                                            recurring_action_timer,
+                                                            (void *) op);
+                }
+            }
+
+            if (op->opaque->callback) {
+                op->opaque->callback(op);
+            }
+
+            crm_info("Exit code: %d, error: %s", op->rc, error);
+
+            dlclose(lib);
+            return pcmk_rc_ok;
+        }
     }
-
-    metadata = dlsym(lib, "metadata");
-
-    if ((lib_error = dlerror()) != NULL){
-        free(lib_error);
-
-        return pcmk_rc_error;
-    }
-
-    op->rc = PCMK_OCF_OK;
-    op->status = PCMK_EXEC_DONE;
-    op->pid = 0;
-    op->stdout_data = strdup(metadata);
-
-    if (op->opaque->callback) {
-        op->opaque->callback(op);
-    }
-
-    dlclose(lib);
-    return pcmk_rc_ok;
 }
 
 int
@@ -105,43 +119,42 @@ services__execute_dlopen_action(svc_action_t *op) {
     int (*exec)(GHashTable *, char **);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
-    g_hash_table_replace(op->params, strdup("DLOPEN_RESOURCE_INSTANCE"), strdup(op->rsc));
+    g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
         return pcmk_rc_error;
-    }
+    } else {
+        exec = dlsym(lib, op->action);
 
-    exec = dlsym(lib, op->action);
+        if ((lib_error = dlerror()) != NULL){
+            free(lib_error);
 
-    if ((lib_error = dlerror()) != NULL){
-        free(lib_error);
-
-        return pcmk_rc_error;
-    }
-
-    op->rc = exec(op->params, &error);
-    op->status = PCMK_EXEC_DONE;
-    op->pid = 0;
-
-    if (op->interval_ms != 0) {
-        // Recurring operations must be either cancelled or rescheduled
-        if (op->cancel) {
-            services__set_cancelled(op);
-            cancel_recurring_action(op);
+            return pcmk_rc_error;
         } else {
-            op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
-                                                    recurring_action_timer,
-                                                    (void *) op);
+            op->rc = exec(op->params, &error);
+            op->status = PCMK_EXEC_DONE;
+            op->pid = 0;
+            if (op->interval_ms != 0) {
+                // Recurring operations must be either cancelled or rescheduled
+                if (op->cancel) {
+                    services__set_cancelled(op);
+                    cancel_recurring_action(op);
+                } else {
+                    op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
+                                                            recurring_action_timer,
+                                                            (void *) op);
+                }
+            }
+
+            if (op->opaque->callback) {
+                op->opaque->callback(op);
+            }
+
+            crm_info("Exit code: %d, error: %s", op->rc, error);
+
+            dlclose(lib);
+            return pcmk_rc_ok;
         }
     }
-
-    if (op->opaque->callback) {
-        op->opaque->callback(op);
-    }
-
-    crm_info("Exit code: %d, error: %s", op->rc, error);
-
-    dlclose(lib);
-    return pcmk_rc_ok;
 }

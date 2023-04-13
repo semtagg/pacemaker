@@ -485,6 +485,13 @@ AC_ARG_WITH([logdir],
     [ CRM_LOG_DIR="$withval" ]
 )
 
+DLOPEN_ROOT_DIR=""
+AC_ARG_WITH([dlopen-root-dir],
+    [AS_HELP_STRING([--with-dlopen-root-dir=DIR],
+        [directory for dlopen plugins @<:@LIBEXECDIR/dlopen@:>@])],
+    [ DLOPEN_ROOT_DIR="$withval" ]
+)
+
 CRM_BUNDLE_DIR=""
 AC_ARG_WITH([bundledir],
     [AS_HELP_STRING([--with-bundledir=DIR],
@@ -692,6 +699,10 @@ AC_SUBST(PCMK__COROSYNC_CONF)
 expand_path_option CRM_LOG_DIR "${localstatedir}/log/pacemaker"
 AC_DEFINE_UNQUOTED(CRM_LOG_DIR,"$CRM_LOG_DIR", Location for Pacemaker log file)
 AC_SUBST(CRM_LOG_DIR)
+
+expand_path_option DLOPEN_ROOT_DIR "${libexecdir}/log/pacemaker"
+AC_DEFINE_UNQUOTED(DLOPEN_ROOT_DIR, "$DLOPEN_ROOT_DIR", Directory for dlopen plugins)
+AC_SUBST(DLOPEN_ROOT_DIR)
 
 expand_path_option CRM_BUNDLE_DIR "${localstatedir}/log/pacemaker/bundles"
 AC_DEFINE_UNQUOTED(CRM_BUNDLE_DIR,"$CRM_BUNDLE_DIR", Location for Pacemaker bundle logs)
