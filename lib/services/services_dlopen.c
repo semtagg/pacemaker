@@ -67,48 +67,34 @@ int
 services__execute_dlopen_metadata(svc_action_t *op) {
     void *lib;
     char *lib_error;
-    char *error;
-    int (*exec)(char **);
+    const char *metadata;
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
-    g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
         return pcmk_rc_error;
-    } else {
-        exec = dlsym(lib, "metadata");
-
-        if ((lib_error = dlerror()) != NULL){
-            free(lib_error);
-
-            return pcmk_rc_error;
-        } else {
-            op->rc = exec(&op->stdout_data);
-            op->status = PCMK_EXEC_DONE;
-            op->pid = 0;
-            if (op->interval_ms != 0) {
-                // Recurring operations must be either cancelled or rescheduled
-                if (op->cancel) {
-                    services__set_cancelled(op);
-                    cancel_recurring_action(op);
-                } else {
-                    op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
-                                                            recurring_action_timer,
-                                                            (void *) op);
-                }
-            }
-
-            if (op->opaque->callback) {
-                op->opaque->callback(op);
-            }
-
-            crm_info("Exit code: %d, error: %s", op->rc, error);
-
-            dlclose(lib);
-            return pcmk_rc_ok;
-        }
     }
+
+    metadata = dlsym(lib, "metadata");
+
+    if ((lib_error = dlerror()) != NULL){
+        free(lib_error);
+
+        return pcmk_rc_error;
+    }
+
+    op->rc = PCMK_OCF_OK;
+    op->status = PCMK_EXEC_DONE;
+    op->pid = 0;
+    op->stdout_data = strdup(metadata);
+
+    if (op->opaque->callback) {
+        op->opaque->callback(op);
+    }
+
+    dlclose(lib);
+    return pcmk_rc_ok;
 }
 
 int
@@ -119,42 +105,43 @@ services__execute_dlopen_action(svc_action_t *op) {
     int (*exec)(GHashTable *, char **);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
-    g_hash_table_replace(op->params, strdup("OCF_RESOURCE_INSTANCE"), strdup(op->rsc));
+    g_hash_table_replace(op->params, strdup("DLOPEN_RESOURCE_INSTANCE"), strdup(op->rsc));
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
         return pcmk_rc_error;
-    } else {
-        exec = dlsym(lib, op->action);
+    }
 
-        if ((lib_error = dlerror()) != NULL){
-            free(lib_error);
+    exec = dlsym(lib, op->action);
 
-            return pcmk_rc_error;
+    if ((lib_error = dlerror()) != NULL){
+        free(lib_error);
+
+        return pcmk_rc_error;
+    }
+
+    op->rc = exec(op->params, &error);
+    op->status = PCMK_EXEC_DONE;
+    op->pid = 0;
+
+    if (op->interval_ms != 0) {
+        // Recurring operations must be either cancelled or rescheduled
+        if (op->cancel) {
+            services__set_cancelled(op);
+            cancel_recurring_action(op);
         } else {
-            op->rc = exec(op->params, &error);
-            op->status = PCMK_EXEC_DONE;
-            op->pid = 0;
-            if (op->interval_ms != 0) {
-                // Recurring operations must be either cancelled or rescheduled
-                if (op->cancel) {
-                    services__set_cancelled(op);
-                    cancel_recurring_action(op);
-                } else {
-                    op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
-                                                            recurring_action_timer,
-                                                            (void *) op);
-                }
-            }
-
-            if (op->opaque->callback) {
-                op->opaque->callback(op);
-            }
-
-            crm_info("Exit code: %d, error: %s", op->rc, error);
-
-            dlclose(lib);
-            return pcmk_rc_ok;
+            op->opaque->repeat_timer = g_timeout_add(op->interval_ms,
+                                                    recurring_action_timer,
+                                                    (void *) op);
         }
     }
+
+    if (op->opaque->callback) {
+        op->opaque->callback(op);
+    }
+
+    crm_info("Exit code: %d, error: %s", op->rc, error);
+
+    dlclose(lib);
+    return pcmk_rc_ok;
 }
