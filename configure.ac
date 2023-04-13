@@ -488,7 +488,7 @@ AC_ARG_WITH([logdir],
 DLOPEN_ROOT_DIR=""
 AC_ARG_WITH([dlopen-root-dir],
     [AS_HELP_STRING([--with-dlopen-root-dir=DIR],
-        [directory for dlopen plugins @<:@LIBEXECDIR/dlopen@:>@])],
+        [directory for dlopen plugins @<:@/usr/lib/dlopen@:>@])],
     [ DLOPEN_ROOT_DIR="$withval" ]
 )
 
@@ -700,7 +700,7 @@ expand_path_option CRM_LOG_DIR "${localstatedir}/log/pacemaker"
 AC_DEFINE_UNQUOTED(CRM_LOG_DIR,"$CRM_LOG_DIR", Location for Pacemaker log file)
 AC_SUBST(CRM_LOG_DIR)
 
-expand_path_option DLOPEN_ROOT_DIR "${libexecdir}/log/pacemaker"
+expand_path_option DLOPEN_ROOT_DIR "/usr/lib/dlopen"
 AC_DEFINE_UNQUOTED(DLOPEN_ROOT_DIR, "$DLOPEN_ROOT_DIR", Directory for dlopen plugins)
 AC_SUBST(DLOPEN_ROOT_DIR)
 
