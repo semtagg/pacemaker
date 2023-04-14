@@ -105,7 +105,7 @@ services__execute_dlopen_action(svc_action_t *op) {
     void *lib;
     char *lib_error;
     char *error;
-    go_str msg = {op->rsc, sizeof(op->rsc)};
+    go_str msg = {op->rsc, strlen(op->rsc)};
     go_int (*exec)(go_str);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
