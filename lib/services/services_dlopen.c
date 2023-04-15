@@ -71,6 +71,7 @@ services__execute_dlopen_metadata(svc_action_t *op) {
     void *lib;
     char *lib_error;
     go_str (*metadata)();
+    go_str msg;
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
@@ -87,10 +88,12 @@ services__execute_dlopen_metadata(svc_action_t *op) {
         return pcmk_rc_error;
     }
     
+    msg = metadata();
     op->rc = PCMK_OCF_OK;
     op->status = PCMK_EXEC_DONE;
     op->pid = 0;
-    op->stdout_data = strdup(metadata().p);
+    op->stdout_data = strndup(msg.p, msg.len);
+    //op->stdout_data = strdup(metadata().p);
 
     if (op->opaque->callback) {
         op->opaque->callback(op);
@@ -105,7 +108,7 @@ services__execute_dlopen_action(svc_action_t *op) {
     void *lib;
     char *lib_error;
     char *error;
-    go_str msg = {op->rsc, sizeof(op->rsc)};
+    go_str msg = {op->rsc, strlen(op->rsc)};
     go_int (*exec)(go_str);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
