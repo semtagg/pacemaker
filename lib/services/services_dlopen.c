@@ -19,6 +19,7 @@
 
 typedef int go_int;
 typedef struct{const char *p; go_int len;} go_str;
+typedef struct{void *arr; go_int len; go_int cap;} go_slice;
 
 GList *
 services__list_dlopen_agents(void)
@@ -107,12 +108,14 @@ int
 services__execute_dlopen_action(svc_action_t *op) {
     void *lib;
     char *lib_error;
-    char *error;
-    go_str msg = {op->rsc, strlen(op->rsc)};
-    go_int (*exec)(go_str);
+    go_str msg = {op->rsc, strlen(op->rsc)}; // strdup ?
+    go_str *error = malloc(sizeof(go_str));
+    go_int (*exec)(go_slice, go_str *);
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
-    g_hash_table_replace(op->params, strdup("DLOPEN_RESOURCE_INSTANCE"), strdup(op->rsc));
+    go_str data = {{strdup(op->rsc), strlen(op->rsc)}};
+    go_slice params = {data, 1, 1};
+    // g_hash_table_replace(op->params, strdup("DLOPEN_RESOURCE_INSTANCE"), strdup(op->rsc));
     
     crm_info("Resource %s", op->rsc);
     
@@ -130,7 +133,7 @@ services__execute_dlopen_action(svc_action_t *op) {
         return pcmk_rc_error;
     }
 
-    op->rc = exec(msg);
+    op->rc = exec(params, error);
     op->status = PCMK_EXEC_DONE;
     op->pid = 0;
 
@@ -150,7 +153,7 @@ services__execute_dlopen_action(svc_action_t *op) {
         op->opaque->callback(op);
     }
 
-    crm_info("Exit code: %d, error: %s", op->rc, error);
+    crm_info("Exit code: %d, error: %s", op->rc, error->p);
 
     dlclose(lib);
     return pcmk_rc_ok;
