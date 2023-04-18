@@ -115,7 +115,7 @@ services__execute_dlopen_action(svc_action_t *op) {
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
 
-    crm_info("Resource %s", op->rsc);
+    // crm_info("Resource %s", op->rsc);
     
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
