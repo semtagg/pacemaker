@@ -24,7 +24,7 @@ typedef struct{void *arr; go_int len; go_int cap;} go_slice;
 GList *
 services__list_dlopen_agents(void)
 {
-    return services_os_get_directory_list(PCMK_DLOPEN_DIR, TRUE, FALSE);
+    return services_os_get_directory_list(DLOPEN_ROOT_DIR, TRUE, FALSE);
 }
 
 bool
@@ -32,7 +32,7 @@ services__dlopen_agent_exists(const char *agent)
 {
     bool rc = FALSE;
     struct stat st;
-    char *path = pcmk__full_path(agent, PCMK_DLOPEN_DIR);
+    char *path = pcmk__full_path(agent, DLOPEN_ROOT_DIR);
 
     rc = (stat(path, &st) == 0);
     free(path);
@@ -42,7 +42,7 @@ services__dlopen_agent_exists(const char *agent)
 int
 services__dlopen_prepare(svc_action_t *op)
 {
-    op->opaque->exec = pcmk__full_path(op->agent, PCMK_DLOPEN_DIR);
+    op->opaque->exec = pcmk__full_path(op->agent, DLOPEN_ROOT_DIR);
     op->opaque->args[0] = strdup(op->opaque->exec);
     op->opaque->args[1] = strdup(op->action);
     if ((op->opaque->args[0] == NULL) || (op->opaque->args[1] == NULL)) {
