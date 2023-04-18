@@ -421,6 +421,7 @@
           <value>service</value>
           <value>systemd</value>
           <value>nagios</value>
+          <value>dlopen</value>
         </choice>
       </attribute>
     </choice>
