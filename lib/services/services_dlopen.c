@@ -15,8 +15,6 @@
 #include "services_private.h"
 #include "services_dlopen.h"
 
-#define PCMK_DLOPEN_DIR  "/usr/lib/dlopen" // or "/usr/lib/dlopen/"
-
 typedef long long int go_int;
 typedef struct{const char *p; go_int len;} go_str;
 typedef struct{void *arr; go_int len; go_int cap;} go_slice;
@@ -73,8 +71,8 @@ services__execute_dlopen_metadata(svc_action_t *op) {
     char *lib_error;
     go_str (*metadata)();
     go_str msg;
-    char dst[200] = "/usr/lib/dlopen/";
-    strcat(dst, op->agent);
+    char *dst = pcmk__full_path(op->agent, DLOPEN_ROOT_DIR);
+
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
@@ -112,11 +110,10 @@ services__execute_dlopen_action(svc_action_t *op) {
     go_int (*exec)(go_slice, go_str *);
     go_str data[1] = {{op->rsc, strlen(op->rsc)}}; //strdup ?
     go_slice params = {data, 1, 1};
-    char dst[200] = "/usr/lib/dlopen/";
-    strcat(dst, op->agent);
+    char *dst = pcmk__full_path(op->agent, DLOPEN_ROOT_DIR);
 
     // crm_info("Resource %s", op->rsc);
-    
+
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 
     if (!lib) {
