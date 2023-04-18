@@ -106,9 +106,9 @@ int
 services__execute_dlopen_action(svc_action_t *op) {
     void *lib;
     char *lib_error;
-    go_str *error = malloc(sizeof(go_str));
+    go_str error;
     go_int (*exec)(go_slice, go_str *);
-    go_str data[1] = {{op->rsc, strlen(op->rsc)}}; //strdup ?
+    go_str data[1] = {{op->rsc, strlen(op->rsc)}};
     go_slice params = {data, 1, 1};
     char *dst = pcmk__full_path(op->agent, DLOPEN_ROOT_DIR);
 
@@ -128,9 +128,12 @@ services__execute_dlopen_action(svc_action_t *op) {
         return pcmk_rc_error;
     }
 
-    op->rc = exec(params, error);
+    op->rc = exec(params, &error);
     op->status = PCMK_EXEC_DONE;
     op->pid = 0;
+    if (op->rc) {
+           op->stderr_data = strndup(error.p, error.len);
+    }
 
     if (op->interval_ms != 0) {
         // Recurring operations must be either cancelled or rescheduled
