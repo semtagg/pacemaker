@@ -902,6 +902,20 @@ action_complete(svc_action_t * action)
     }
 #endif
 
+    if (rsc && pcmk__str_eq(rsc->class, PCMK_RESOURCE_CLASS_DLOPEN, pcmk__str_casei)) {
+        if (action_matches(cmd, "monitor", 0)
+            && pcmk__result_ok(&(cmd->result))) {
+            /* Successfully executed --version for the nagios plugin */
+            cmd->result.exit_status = PCMK_OCF_NOT_RUNNING;
+
+        } else if (pcmk__str_eq(cmd->action, "start", pcmk__str_casei)
+                    && !pcmk__result_ok(&(cmd->result))) {
+#ifdef PCMK__TIME_USE_CGT
+            goagain = true;
+#endif
+        }
+    }
+
 #ifdef PCMK__TIME_USE_CGT
     if (goagain) {
         int time_sum = time_diff_ms(NULL, &(cmd->t_first_run));

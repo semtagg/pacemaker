@@ -30,6 +30,7 @@
 #include "services_private.h"
 #include "services_ocf.h"
 #include "services_lsb.h"
+#include "services_dlopen.h"
 
 #if SUPPORT_UPSTART
 #  include <upstart.h>
@@ -306,6 +307,9 @@ services__create_resource_action(const char *name, const char *standard,
     } else if (strcasecmp(op->standard, PCMK_RESOURCE_CLASS_LSB) == 0) {
         rc = services__lsb_prepare(op);
 
+    } else if (strcasecmp(op->standard, PCMK_RESOURCE_CLASS_DLOPEN) == 0) {
+        rc = services__dlopen_prepare(op);
+
 #if SUPPORT_SYSTEMD
     } else if (strcasecmp(op->standard, PCMK_RESOURCE_CLASS_SYSTEMD) == 0) {
         rc = services__systemd_prepare(op);
@@ -574,6 +578,10 @@ services_result2ocf(const char *standard, const char *action, int exit_status)
                             pcmk__str_casei)) {
         return services__lsb2ocf(action, exit_status);
 
+    } else if (pcmk__str_eq(standard, PCMK_RESOURCE_CLASS_DLOPEN,
+                            pcmk__str_casei)) {
+        return services__dlopen2ocf(exit_status);
+
     } else {
         crm_warn("Treating result from unknown standard '%s' as OCF",
                  ((standard == NULL)? "unspecified" : standard));
@@ -814,6 +822,11 @@ handle_duplicate_recurring(svc_action_t * op)
 static int
 execute_action(svc_action_t *op)
 {
+    if (pcmk__str_eq(op->standard, PCMK_RESOURCE_CLASS_DLOPEN,
+                     pcmk__str_casei)) {
+        return services__execute_dlopen(op);
+    }
+
 #if SUPPORT_UPSTART
     if (pcmk__str_eq(op->standard, PCMK_RESOURCE_CLASS_UPSTART,
                      pcmk__str_casei)) {
@@ -1063,6 +1076,7 @@ resources_list_standards(void)
     GList *standards = NULL;
 
     standards = g_list_append(standards, strdup(PCMK_RESOURCE_CLASS_OCF));
+    standards = g_list_append(standards, strdup(PCMK_RESOURCE_CLASS_DLOPEN));
     standards = g_list_append(standards, strdup(PCMK_RESOURCE_CLASS_LSB));
     standards = g_list_append(standards, strdup(PCMK_RESOURCE_CLASS_SERVICE));
 
@@ -1154,6 +1168,8 @@ resources_list_agents(const char *standard, const char *provider)
         return resources_os_list_ocf_agents(provider);
     } else if (strcasecmp(standard, PCMK_RESOURCE_CLASS_LSB) == 0) {
         return services__list_lsb_agents();
+    } else if (strcasecmp(standard, PCMK_RESOURCE_CLASS_DLOPEN) == 0) {
+        return services__list_dlopen_agents();
 #if SUPPORT_SYSTEMD
     } else if (strcasecmp(standard, PCMK_RESOURCE_CLASS_SYSTEMD) == 0) {
         return systemd_unit_listall();
@@ -1232,6 +1248,9 @@ resources_agent_exists(const char *standard, const char *provider, const char *a
 
     } else if (pcmk__str_eq(standard, PCMK_RESOURCE_CLASS_LSB, pcmk__str_casei)) {
         rc = services__lsb_agent_exists(agent);
+
+    } else if (pcmk__str_eq(standard, PCMK_RESOURCE_CLASS_DLOPEN, pcmk__str_casei)) {
+        rc = services__dlopen_agent_exists(agent);
 
 #if SUPPORT_SYSTEMD
     } else if (pcmk__str_eq(standard, PCMK_RESOURCE_CLASS_SYSTEMD, pcmk__str_casei)) {

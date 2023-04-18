@@ -377,7 +377,8 @@ pcmk__inject_resource_history(pcmk__output_t *out, xmlNode *cib_node,
                                      PCMK_RESOURCE_CLASS_SERVICE,
                                      PCMK_RESOURCE_CLASS_UPSTART,
                                      PCMK_RESOURCE_CLASS_SYSTEMD,
-                                     PCMK_RESOURCE_CLASS_LSB, NULL)) {
+                                     PCMK_RESOURCE_CLASS_LSB,
+                                     PCMK_RESOURCE_CLASS_DLOPEN, NULL)) {
         out->err(out, "Invalid class for %s: %s", resource, rclass);
         return NULL;
 
