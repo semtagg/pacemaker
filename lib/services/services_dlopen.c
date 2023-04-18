@@ -110,7 +110,7 @@ services__execute_dlopen_action(svc_action_t *op) {
     char *lib_error;
     go_str *error = malloc(sizeof(go_str));
     go_int (*exec)(go_slice, go_str *);
-    go_str data[1] = {{strdup(op->rsc), strlen(op->rsc)}}; //strdup ?
+    go_str data[1] = {{op->rsc, strlen(op->rsc)}}; //strdup ?
     go_slice params = {data, 1, 1};
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
@@ -151,7 +151,7 @@ services__execute_dlopen_action(svc_action_t *op) {
         op->opaque->callback(op);
     }
 
-    crm_info("Exit code: %d, error: %s", op->rc, error->p);
+    // crm_info("Exit code: %d, error: %s", op->rc, error->p);
 
     dlclose(lib);
     return pcmk_rc_ok;
