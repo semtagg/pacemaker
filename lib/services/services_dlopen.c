@@ -17,7 +17,7 @@
 
 #define PCMK_DLOPEN_DIR  "/usr/lib/dlopen" // or "/usr/lib/dlopen/"
 
-typedef int go_int;
+typedef long long int go_int;
 typedef struct{const char *p; go_int len;} go_str;
 typedef struct{void *arr; go_int len; go_int cap;} go_slice;
 
@@ -108,15 +108,13 @@ int
 services__execute_dlopen_action(svc_action_t *op) {
     void *lib;
     char *lib_error;
-    go_str msg = {op->rsc, strlen(op->rsc)}; // strdup ?
     go_str *error = malloc(sizeof(go_str));
     go_int (*exec)(go_slice, go_str *);
+    go_str data[1] = {{strdup(op->rsc), strlen(op->rsc)}}; //strdup ?
+    go_slice params = {data, 1, 1};
     char dst[200] = "/usr/lib/dlopen/";
     strcat(dst, op->agent);
-    go_str data = {{strdup(op->rsc), strlen(op->rsc)}};
-    go_slice params = {data, 1, 1};
-    // g_hash_table_replace(op->params, strdup("DLOPEN_RESOURCE_INSTANCE"), strdup(op->rsc));
-    
+
     crm_info("Resource %s", op->rsc);
     
     lib = dlopen(dst, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
